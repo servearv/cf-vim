@@ -1,4 +1,4 @@
-" cf-vim.vim - Codeforces integration for Vim
+i" cf-vim.vim - Codeforces integration for Vim
 " This plugin encapsulates Codeforces-related commands and mappings.
 " It expects a global variable g:cf_workdir (set in your vimrc) to define
 " the working directory for Codeforces tasks. If not defined, it defaults to ~/acads/cp.
@@ -32,8 +32,8 @@ inoremap <F10> <ESC> :w <CR> :!g++ -fsanitize=address -std=c++17 -Wall -Wextra -
 execute 'autocmd BufRead,BufNewFile ' . s:cf_workdir . '/* let g:copilot_enabled = v:false'
 
 " -----------------------------------------------------------------------------
-" Auto-load 'inp' Buffer in a vsplit on the right
-" If a file is opened and it is the only buffer (and not the inp file),
+" Auto-load 'inp' Buffer in a Vertical Split on the Right
+" If a file is opened and it is the only buffer (and not the 'inp' file),
 " then open the 'inp' file from cf_workdir in a vertical split to the right.
 augroup cf_open_inp
   autocmd!
@@ -50,3 +50,22 @@ function! s:OpenInpIfOnlyBuffer() abort
   endif
 endfunction
 
+" -----------------------------------------------------------------------------
+" Auto-close 'inp' Buffer When Main File Exits
+" When a non-'inp' buffer is deleted and no other main file buffers remain,
+" automatically close the 'inp' buffer.
+augroup cf_close_inp
+  autocmd!
+  autocmd BufDelete * if fnamemodify(expand('<afile>'), ':t') != 'inp' | call s:MaybeCloseInp() | endif
+augroup END
+
+function! s:MaybeCloseInp() abort
+  " Gather all listed buffers that are not 'inp'
+  let mainBuffers = filter(range(1, bufnr('$')), 'buflisted(v:val) && fnamemodify(bufname(v:val), ":t") != "inp"')
+  " If no main buffers remain, close any 'inp' buffer
+  if empty(mainBuffers)
+    for buf in filter(range(1, bufnr('$')), 'buflisted(v:val) && fnamemodify(bufname(v:val), ":t") == "inp"')
+      execute 'bwipeout ' . buf
+    endfor
+  endif
+endfunction
